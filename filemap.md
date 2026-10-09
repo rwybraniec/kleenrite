@@ -8,3 +8,5 @@ hello/greet.py — pure greet(name, shout) function; touch to change greeting te
 hello/cli.py — argparse entry point main(argv) that prints greet(...); touch to add or change CLI options
 hello/__main__.py — runs main() for `python -m hello`; rarely touched
 tests/__init__.py — empty marker so unittest discovers tests/; do not add logic
+tests/test_hello.py — unittest tests for greet() and main(); touch when behaviour changes
+README.md — usage examples and test command; touch when CLI usage changes
