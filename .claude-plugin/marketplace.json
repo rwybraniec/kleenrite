@@ -3,17 +3,12 @@
   "owner": {
     "name": "rwybraniec"
   },
-  "description": "Claude Code mods: animated agent cards and a gradient progress bar.",
+  "description": "Claude Code mod: animated Claw'd agent cards.",
   "plugins": [
     {
       "name": "agent-flair",
       "source": "./mods/agent-flair",
       "description": "Animated Claw'd on every subagent card, with a different look per agent type."
-    },
-    {
-      "name": "progress-band",
-      "source": "./mods/progress-band",
-      "description": "Red-to-green gradient progress bar above the prompt with an ETA, plus a progress pane."
     }
   ]
 }
