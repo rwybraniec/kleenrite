@@ -12,3 +12,5 @@ tests/test_hello.py — unittest tests for greet() and main(); touch when behavi
 README.md — usage examples and test command; touch when CLI usage changes
 .claude-plugin/marketplace.json — marketplace catalog for the agent-flair mod; touch when adding a mod
 mods/agent-flair/ — mod: animated Claw'd cards per subagent type; edit hooks/register.tsx
+docs/images/agent-flair.png — preview render of the agent-flair cards; regenerate if the sprites change
+docs/images/savvy-progress.png — preview render of savvy-progress (third-party mod, drawn from its output)

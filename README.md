@@ -41,4 +41,16 @@ Install (terminal session):
 
 Restart the session afterwards. Mods draw only on the terminal and desktop surfaces, not in the claude.ai web or mobile apps.
 
+## Previews
+
+Drawn from each mod's own output with sample data, so they show the layout and colors but not the animation. They are renders, not screenshots of a live terminal.
+
+**agent-flair**: one card per agent type, with its four-frame walk cycle beside it.
+
+![agent-flair cards for every agent type](docs/images/agent-flair.png)
+
+**savvy-progress** (from [JohnnyVizz/claude-kit](https://github.com/JohnnyVizz/claude-kit), MIT): the bar above the prompt and the agents panel.
+
+![savvy-progress bar and agents panel](docs/images/savvy-progress.png)
+
 Check the mod: `claude plugin validate mods/agent-flair` and `claude plugin test mods/agent-flair`.
