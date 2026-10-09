@@ -10,3 +10,6 @@ hello/__main__.py — runs main() for `python -m hello`; rarely touched
 tests/__init__.py — empty marker so unittest discovers tests/; do not add logic
 tests/test_hello.py — unittest tests for greet() and main(); touch when behaviour changes
 README.md — usage examples and test command; touch when CLI usage changes
+.claude-plugin/marketplace.json — marketplace catalog for the two mods; touch when adding a mod
+mods/agent-flair/ — mod: animated Claw'd cards per subagent type; edit hooks/register.tsx
+mods/progress-band/ — mod: gradient progress bar, pane and status line; edit hooks/register.tsx

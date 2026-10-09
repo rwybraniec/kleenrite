@@ -1,0 +1,10 @@
+{
+  "name": "agent-flair",
+  "version": "0.2.0",
+  "description": "Gives each subagent type its own style, with an animated Claw'd that works while the agent runs.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "rwybraniec"
+  },
+  "license": "MIT"
+}

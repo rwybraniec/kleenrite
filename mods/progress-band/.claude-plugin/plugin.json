@@ -1,0 +1,10 @@
+{
+  "name": "progress-band",
+  "version": "0.1.0",
+  "description": "A red-to-green gradient progress bar above the prompt: where you are in the task and how long is left.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "rwybraniec"
+  },
+  "license": "MIT"
+}
