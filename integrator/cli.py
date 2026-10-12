@@ -1,6 +1,7 @@
 """Command-line interface: ``python -m integrator {validate,run,runs,errors,connectors}``."""
 
 import argparse
+import time
 
 from integrator.config import load_flow
 from integrator.connectors import CONNECTORS
@@ -18,6 +19,10 @@ def main(argv: list[str] | None = None) -> int:
         sp = sub.add_parser(name)
         sp.add_argument("flow", help="path to a flow JSON file")
     sub.choices["run"].add_argument("--dry-run", action="store_true", help="read and map, do not write")
+    sv = sub.add_parser("serve", help="run a flow repeatedly on an interval")
+    sv.add_argument("flow")
+    sv.add_argument("--every", type=float, required=True, help="seconds between runs")
+    sv.add_argument("--max-runs", type=int, default=0, help="stop after N runs (0 = forever)")
     for name in ("runs", "errors"):
         sp = sub.add_parser(name)
         sp.add_argument("--flow")
@@ -36,6 +41,19 @@ def main(argv: list[str] | None = None) -> int:
             res = run_flow(load_flow(args.flow), Store(args.db), dry_run=args.dry_run)
             print(f"run {res.run_id}: {res.status} read={res.read} written={res.written} failed={res.failed}")
             return 0 if res.status == "success" else 1
+        elif args.cmd == "serve":
+            flow, store, n = load_flow(args.flow), Store(args.db), 0
+            while True:
+                try:
+                    res = run_flow(flow, store)
+                    print(f"run {res.run_id}: {res.status} read={res.read} written={res.written} failed={res.failed}",
+                          flush=True)
+                except IntegratorError as exc:  # keep the schedule alive across bad runs
+                    print(f"error: {exc}", flush=True)
+                n += 1
+                if args.max_runs and n >= args.max_runs:
+                    break
+                time.sleep(args.every)
         elif args.cmd == "runs":
             for r in Store(args.db).runs(args.flow, args.limit):
                 print("#{} {} {} {} read={} written={} failed={}".format(*r))

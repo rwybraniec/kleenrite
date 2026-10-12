@@ -7,6 +7,7 @@ Stdlib-only Python. A **flow** reads from a **source** connector, maps fields, a
 ```
 python -m integrator validate examples/netsuite_customers_to_s3.json
 python -m integrator run examples/netsuite_customers_to_s3.json [--dry-run]
+python -m integrator serve FLOW --every 300 [--max-runs N]   # simple built-in scheduler
 python -m integrator runs | errors [--flow NAME]
 python -m integrator connectors
 ```
@@ -37,6 +38,9 @@ Set `source.delta_field` and use `{since}` in the SuiteQL. After a fully clean r
 A run with any failed record does not advance the watermark, so failures are re-read; use idempotent
 destinations (`external_id_field`, deterministic S3 keys) so reprocessing is safe.
 
+S3 sources remember processed object keys (`seen_keys`, last 10,000) and skip them on later runs; like the
+watermark, they are saved only after a clean run.
+
 ## Reliability
 HTTP 429/5xx and network errors retry with exponential backoff (1,2,4.. capped at 30s) up to `retries`.
 Other errors are recorded per record (`errors` command) without stopping the batch.
@@ -46,8 +50,9 @@ Other errors are recorded per record (`errors` command) without stopping the bat
 Add a connector by subclassing `Connector` and registering it in `connectors/__init__.py`.
 
 ## Not built yet / caveats
-- **Not verified against a live NetSuite or AWS account**: tests use a fake transport and AWS's published
-  SigV4 vector. Expect to tune the SuiteQL date format for your account (`TO_DATE` vs `TO_TIMESTAMP`, and
-  the format NetSuite returns for `lastmodifieddate`).
-- No scheduler (use cron/EventBridge to call `run`), web UI, SQS/NetSuite webhooks as sources, S3 "already
-  processed" tracking, or multi-step flows / lookups. Those are the natural next steps.
+- **Not verified against a live NetSuite or AWS account.** Tests use a fake transport, AWS's published SigV4
+  vector, and an end-to-end run over real HTTP against a local fake S3 server. Expect to tune the SuiteQL
+  date format for your account (`TO_DATE` vs `TO_TIMESTAMP`, and the format NetSuite returns for
+  `lastmodifieddate`). First step with real credentials: `run --dry-run` against a sandbox.
+- `serve` is a single-process interval loop; for production use cron/EventBridge calling `run`.
+- Not built: web UI, webhook/SQS sources, multi-step flows or lookups.

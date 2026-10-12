@@ -82,8 +82,12 @@ def run_flow(flow: dict, store: Store, *, transport=None, env=None, dry_run=Fals
         store.add_error(run_id, name, "run", str(exc))
     finally:
         # Only advance the watermark on a clean run so failed records are re-read next time.
-        if result.status == "success" and not dry_run and high_water != state.get("watermark"):
-            store.set_state(name, {**state, "watermark": high_water})
+        if result.status == "success" and not dry_run:
+            new_state = {**state, **source.state_update}
+            if high_water is not None:
+                new_state["watermark"] = high_water
+            if new_state != state:
+                store.set_state(name, new_state)
         store.finish_run(run_id, result.status, result.read, result.written, result.failed)
     return result
 

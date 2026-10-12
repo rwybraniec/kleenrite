@@ -42,6 +42,9 @@ def _parse_records(text: str) -> list[dict]:
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
+MAX_SEEN = 10000
+
+
 class S3(_AwsConnector):
     SERVICE = "s3"
 
@@ -58,6 +61,8 @@ class S3(_AwsConnector):
         return base + path + ("?" + urlencode(query) if query else "")
 
     def read(self, state):
+        seen = list(state.get("seen_keys", []))
+        done = set(seen)
         token = None
         while True:
             q = {"list-type": "2", "prefix": self.config.get("prefix", "")}
@@ -67,8 +72,12 @@ class S3(_AwsConnector):
             ns = {"s": root.tag.split("}")[0].strip("{")} if "}" in root.tag else {}
             pre = "s:" if ns else ""
             for el in root.findall(f"{pre}Contents/{pre}Key", ns):
+                if el.text in done:
+                    continue
                 body = self._send("GET", self._url(el.text), what=f"S3 get {el.text}").text()
                 yield from _parse_records(body)
+                seen.append(el.text)
+                self.state_update["seen_keys"] = seen[-MAX_SEEN:]  # saved only after a clean run
             nxt = root.find(f"{pre}NextContinuationToken", ns)
             if nxt is None:
                 return

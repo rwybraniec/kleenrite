@@ -10,6 +10,7 @@ class Connector:
     def __init__(self, config: dict, transport: Transport | None = None):
         self.config = config
         self.transport = transport or UrllibTransport()
+        self.state_update: dict = {}  # merged into saved flow state after a clean run
 
     def read(self, state: dict):
         """Yield source records (dicts). ``state`` holds the flow's saved watermark."""

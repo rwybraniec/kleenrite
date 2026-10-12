@@ -245,9 +245,81 @@ class CliTests(unittest.TestCase):
             db = os.path.join(d, "db")
             self.assertEqual(cli_main(["--db", db, "validate", path]), 0)
             self.assertEqual(cli_main(["--db", db, "run", path]), 2)  # unknown connector
+            self.assertEqual(cli_main(["--db", db, "serve", path, "--every", "0", "--max-runs", "2"]), 0)
             self.assertEqual(cli_main(["--db", db, "runs"]), 0)
             self.assertEqual(cli_main(["connectors"]), 0)
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class S3StateTests(unittest.TestCase):
+    def test_seen_keys_skip_and_persist_only_on_clean_run(self):
+        listing = (b"<ListBucketResult><Contents><Key>in/a</Key></Contents>"
+                   b"<Contents><Key>in/b</Key></Contents></ListBucketResult>")
+
+        def handler(method, url, headers, body):
+            return Response(200, listing if "list-type" in url else b'{"k": "%s"}' % url.rsplit("/", 1)[-1].encode())
+        with tempfile.TemporaryDirectory() as d:
+            store = Store(os.path.join(d, "t.db"))
+            flow = {"name": "s3in", "source": {"type": "aws_s3", **AWS, "bucket": "b", "prefix": "in/"},
+                    "destination": {"type": "aws_sqs", **AWS, "queue_url": "https://sqs.us-east-1.amazonaws.com/1/q"}}
+            t = FakeTransport(handler)
+            self.assertEqual(run_flow(flow, store, transport=t).read, 2)
+            self.assertEqual(store.get_state("s3in")["seen_keys"], ["in/a", "in/b"])
+            self.assertEqual(run_flow(flow, store, transport=FakeTransport(handler)).read, 0)
+
+
+class LocalHttpEndToEndTests(unittest.TestCase):
+    """Real UrllibTransport against a local fake S3 (path-style endpoint): copies in/ -> out/."""
+
+    def test_s3_to_s3_over_real_http(self):
+        import http.server
+        import threading
+        import urllib.parse
+        objects = {"in/a.jsonl": b'{"n": "  Ann "}\n{"n": "Bob"}\n'}
+        seen_auth = []
+
+        class H(http.server.BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def _send(self, code, body=b""):
+                self.send_response(code)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_GET(self):
+                u = urllib.parse.urlsplit(self.path)
+                seen_auth.append(self.headers.get("Authorization", ""))
+                if u.path == "/bkt":
+                    prefix = urllib.parse.parse_qs(u.query).get("prefix", [""])[0]
+                    keys = "".join(f"<Contents><Key>{k}</Key></Contents>" for k in objects if k.startswith(prefix))
+                    return self._send(200, f"<ListBucketResult>{keys}</ListBucketResult>".encode())
+                key = urllib.parse.unquote(u.path[len("/bkt/"):])
+                self._send(200, objects[key]) if key in objects else self._send(404, b"nope")
+
+            def do_PUT(self):
+                seen_auth.append(self.headers.get("Authorization", ""))
+                objects[urllib.parse.unquote(self.path[len("/bkt/"):])] = self.rfile.read(
+                    int(self.headers["Content-Length"]))
+                self._send(200)
+
+        srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        self.addCleanup(srv.server_close)
+        self.addCleanup(srv.shutdown)
+        old = os.environ.get("no_proxy")
+        os.environ["no_proxy"] = "127.0.0.1"
+        self.addCleanup(lambda: os.environ.__setitem__("no_proxy", old) if old else os.environ.pop("no_proxy", None))
+        ep = f"http://127.0.0.1:{srv.server_port}"
+        flow = {"name": "e2e", "source": {"type": "aws_s3", **AWS, "bucket": "bkt", "prefix": "in/", "endpoint": ep},
+                "mapping": {"fields": {"name": {"from": "n", "transform": ["strip", "upper"]}}},
+                "destination": {"type": "aws_s3", **AWS, "bucket": "bkt", "endpoint": ep, "key": "out/{flow}.jsonl"}}
+        with tempfile.TemporaryDirectory() as d:
+            res = run_flow(flow, Store(os.path.join(d, "t.db")))
+        self.assertEqual((res.status, res.read, res.written), ("success", 2, 2))
+        self.assertEqual(objects["out/e2e.jsonl"], b'{"name": "ANN"}\n{"name": "BOB"}\n')
+        self.assertTrue(all(a.startswith("AWS4-HMAC-SHA256") for a in seen_auth))
