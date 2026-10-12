@@ -1,0 +1,15 @@
+{
+  "name": "s3-orders-to-netsuite",
+  "source": {"type": "aws_s3", "region": "us-east-1", "bucket": "my-integration-bucket", "prefix": "inbound/orders/"},
+  "mapping": {"fields": {"externalId": "order_ref", "memo": {"from": "notes", "default": ""}, "entity.id": "customer_id"}},
+  "destination": {
+    "type": "netsuite",
+    "account": "$env:NS_ACCOUNT",
+    "consumer_key": "$env:NS_CONSUMER_KEY",
+    "consumer_secret": "$env:NS_CONSUMER_SECRET",
+    "token_id": "$env:NS_TOKEN_ID",
+    "token_secret": "$env:NS_TOKEN_SECRET",
+    "record_type": "salesOrder",
+    "external_id_field": "externalId"
+  }
+}

@@ -14,3 +14,15 @@ README.md — usage examples and test command; touch when CLI usage changes
 mods/agent-flair/ — mod: animated Claw'd cards per subagent type; edit hooks/register.tsx
 docs/images/agent-flair.png — preview render of the agent-flair cards; regenerate if the sprites change
 docs/images/savvy-progress.png — preview render of savvy-progress (third-party mod, drawn from its output)
+docs/INTEGRATOR.md — design + usage for the integrator iPaaS engine; touch when behaviour changes
+integrator/ — Celigo-style flow engine (source -> mapping -> destination); `python -m integrator`
+integrator/auth.py — OAuth1 (NetSuite TBA) and AWS SigV4 signing; touch for auth bugs
+integrator/http.py — Transport interface + urllib impl + Response; tests inject a fake
+integrator/config.py — flow JSON loading/validation and $env: secret resolution
+integrator/mapping.py — field mapping and transforms; touch to add a transform
+integrator/store.py — SQLite run history, errors, watermarks
+integrator/runner.py — run_flow: batching, retries, error capture, delta watermark
+integrator/cli.py — argparse CLI (validate, run, runs, errors, connectors)
+integrator/connectors/ — connector registry (__init__), base class, netsuite.py, aws.py (S3, SQS); add new connectors here
+examples/ — sample flow JSON files (NetSuite -> S3, S3 -> NetSuite)
+tests/test_integrator.py — unittest tests for the integrator using a fake transport

@@ -1,0 +1,30 @@
+{
+  "name": "netsuite-customers-to-s3",
+  "source": {
+    "type": "netsuite",
+    "account": "$env:NS_ACCOUNT",
+    "consumer_key": "$env:NS_CONSUMER_KEY",
+    "consumer_secret": "$env:NS_CONSUMER_SECRET",
+    "token_id": "$env:NS_TOKEN_ID",
+    "token_secret": "$env:NS_TOKEN_SECRET",
+    "query": "SELECT id, entityid, email, lastmodifieddate FROM customer WHERE lastmodifieddate > TO_DATE('{since}', 'YYYY-MM-DD HH24:MI:SS') ORDER BY lastmodifieddate",
+    "delta_field": "lastmodifieddate"
+  },
+  "mapping": {
+    "fields": {
+      "customer_id": "id",
+      "name": {"from": "entityid", "transform": "strip", "required": true},
+      "email": {"from": "email", "transform": "lower"},
+      "origin": {"const": "netsuite"},
+      "modified": "lastmodifieddate"
+    }
+  },
+  "destination": {
+    "type": "aws_s3",
+    "region": "us-east-1",
+    "bucket": "my-integration-bucket",
+    "key": "customers/{flow}/{run_id}-{batch}.jsonl"
+  },
+  "batch_size": 500,
+  "retries": 3
+}

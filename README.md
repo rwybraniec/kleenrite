@@ -54,3 +54,12 @@ Drawn from each mod's own output with sample data, so they show the layout and c
 ![savvy-progress bar and agents panel](docs/images/savvy-progress.png)
 
 Check the mod: `claude plugin validate mods/agent-flair` and `claude plugin test mods/agent-flair`.
+
+## integrator (iPaaS engine)
+
+A small Celigo-style flow engine with NetSuite and AWS (S3, SQS) connectors. See `docs/INTEGRATOR.md`.
+
+```
+python -m integrator run examples/netsuite_customers_to_s3.json --dry-run
+```
+
