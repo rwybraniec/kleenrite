@@ -11,7 +11,13 @@ $ python -m hello Ada
 Hello, Ada!
 $ python -m hello Ada --shout
 HELLO, ADA!
+$ python -m hello Ada --repeat 3
+Hello, Ada!
+Hello, Ada!
+Hello, Ada!
 ```
+
+`--repeat N` prints the greeting N times; N must be a positive integer.
 
 ## Tests
 
